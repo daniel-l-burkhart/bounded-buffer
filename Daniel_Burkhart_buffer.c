@@ -14,19 +14,17 @@
 #define TRUE 1
 typedef int buffer_item;
 #define BUFFER_SIZE 8
-#define MIN_SLEEP_TIME 1;
-#define MAX_SLEEP_TIME 5;
 
 /**
  * Global variables
  */
 buffer_item START_NUMBER;
 buffer_item buffer[BUFFER_SIZE];
-
+int MIN_SLEEP_TIME = 1;
+int MAX_SLEEP_TIME = 5;
 pthread_mutex_t mutex;
 sem_t empty, full;
-int insertPointer = 0, removePointer = 0, totalCount = 0;
-int sleepTime, producerThreads, consumerThreads;
+int sleepTime, producerThreads, consumerThreads, insertPointer, removePointer, totalCount;
 
 /**
  * Function decalarations.
@@ -34,12 +32,11 @@ int sleepTime, producerThreads, consumerThreads;
 void getDataFromCommandLine(int argc, char *const *argv);
 void initSyncTools();
 void createThreads();
-
 void *producer(void *param);
 int insert_item(buffer_item item);
-
 void *consumer(void *param);
 int remove_item(buffer_item *item);
+int randomIntOverRange(int min, int max);
 
 /**
  * Main method that serves as entry point to program
@@ -91,6 +88,9 @@ void initSyncTools() {
     pthread_mutex_init(&mutex, NULL);
     sem_init(&empty, 0, BUFFER_SIZE);
     sem_init(&full, 0, 0);
+    totalCount = 0;
+    removePointer = 0;
+    insertPointer = 0;
 }
 
 /**
@@ -177,13 +177,10 @@ int remove_item(buffer_item *item) {
  */
 void *producer(void *param) {
     buffer_item item;
-    int randNum;
-    
+
     while (TRUE) {
-        
-        randNum = rand() % MAX_SLEEP_TIME + MIN_SLEEP_TIME;
-        sleep(randNum);
-        
+
+        sleep(randomIntOverRange(MIN_SLEEP_TIME, MAX_SLEEP_TIME));
         item = START_NUMBER;
         START_NUMBER++;
         
@@ -206,17 +203,27 @@ void *producer(void *param) {
  */
 void *consumer(void *param) {
     buffer_item item;
-    int randNum;
     
     while (TRUE) {
         
-        randNum = rand() % MAX_SLEEP_TIME + MIN_SLEEP_TIME;
-        sleep(randNum);
-        
+        sleep(randomIntOverRange(MIN_SLEEP_TIME, MAX_SLEEP_TIME));
         if (remove_item(&item)) {
             printf("Error occured: consumer\n");
         } else {
             printf("Consumer %u consumed %d\n", (unsigned int) pthread_self(), item);
         }
     }
+}
+
+/**
+* Private helper method to give a random int over a range inclusively.
+*
+* @param min
+*       The min, starting point of range.
+* @param max
+*       The max, ending point of the range.
+*/
+int randomIntOverRange(int min, int max)
+{
+   return min + rand() % (max + 1 - min);
 }
